@@ -1,0 +1,38 @@
+version: 2
+
+sources:
+  - name: flatpad_bronze
+    description: >
+      Salesforce由来のRawデータ (Bronze層)。元の Databricks バンドルでは
+      `{{ var('bronze_catalog') }}.{{ var('bronze_schema') }}` 配下のテーブル群。
+      Snowflake移行後は database/schema をdbt varsで指定する。
+    database: "{{ var('bronze_database') }}"
+    schema: "{{ var('bronze_schema') }}"
+    tables:
+      - name: account
+        description: 顧客アカウント（Salesforce Account）
+      - name: asset
+        description: 資産（納入号機。Salesforce Asset）
+      - name: building__c
+        description: 建物マスタ（Salesforce カスタムオブジェクト Building__c）
+      - name: departmentmst__c
+        description: 部門マスタ（Salesforce カスタムオブジェクト DepartmentMst__c）
+      - name: opportunity
+        description: 商談（Salesforce Opportunity）
+      - name: opportunity_asset__c
+        description: 商談-資産の関連（Salesforce カスタムオブジェクト Opportunity_Asset__c）
+      - name: opportunitybuilding__c
+        description: 商談-建物の関連（Salesforce カスタムオブジェクト OpportunityBuilding__c）
+      - name: opportunitylineitem
+        description: 商談品目（Salesforce OpportunityLineItem）
+      - name: product2
+        description: 商品マスタ（Salesforce Product2）
+      - name: recordtype
+        description: レコードタイプマスタ（Salesforce RecordType）
+      - name: user
+        description: >
+          ユーザーマスタ（Salesforce User）。"USER" はSnowflakeの予約語のため
+          quoting.identifier を有効化している。実テーブルの識別子ケースに応じて
+          必要なら調整すること。
+        quoting:
+          identifier: true

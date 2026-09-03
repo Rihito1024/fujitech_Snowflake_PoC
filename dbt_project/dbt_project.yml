@@ -1,0 +1,36 @@
+name: 'flatpad'
+version: '1.0.0'
+config-version: 2
+
+# Databricks Lakeflow Declarative Pipelines (flatpad_pipeline_bundle) の
+# transformations/ (silver/gold) を移植した dbt-Snowflake プロジェクト。
+profile: 'flatpad'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# 元の databricks.yml の variables (bronze_catalog / bronze_schema) に相当。
+# Snowflake 上で Bronze (Raw) データが格納されているデータベース/スキーマ名に
+# 環境ごと (--vars や dbt_project.yml の target 別 override) で差し替えてください。
+vars:
+  bronze_database: "FLATPAD_RAW_INGESTED"
+  bronze_schema: "PUBLIC"
+
+models:
+  flatpad:
+    staging:
+      +materialized: view
+      +schema: silver
+      +group: staging
+    marts:
+      +materialized: table
+      +schema: gold
+      +group: marts

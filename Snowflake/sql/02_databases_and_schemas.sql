@@ -1,0 +1,32 @@
+-- =====================================================
+-- 02_databases_and_schemas.sql
+-- DB/スキーマの作成とオーナーシップ移管
+-- 参照: ../構成.md #### DB配下, #### 環境（単一環境で運用）
+-- =====================================================
+
+USE ROLE SYSADMIN;
+
+CREATE DATABASE IF NOT EXISTS DATASOURCE
+  COMMENT = 'Salesforce等の連携元データを格納。単一環境（dev/stg/prod分離なし）';
+
+CREATE SCHEMA IF NOT EXISTS DATASOURCE.COMMON
+  COMMENT = 'Storage Integration等、Datasource配下で共通利用するオブジェクト';
+CREATE SCHEMA IF NOT EXISTS DATASOURCE.SALESFORCE
+  COMMENT = 'Salesforce連携: table, Openflow, 外部ステージ, External Access Integration';
+
+CREATE DATABASE IF NOT EXISTS SALES
+  COMMENT = '営業パイプライン用DB。単一環境（dev/stg/prod分離なし）';
+
+CREATE SCHEMA IF NOT EXISTS SALES.ANALYTICS_INTERMEDIATE
+  COMMENT = 'dbt中間モデル';
+CREATE SCHEMA IF NOT EXISTS SALES.ANALYTICS_MARTS
+  COMMENT = 'dbtマート層。table, SemanticView';
+CREATE SCHEMA IF NOT EXISTS SALES.ANALYTICS
+  COMMENT = 'dbtプロジェクト、Task、Cortex Agentオブジェクト';
+
+-- オーナーシップをDB管理ロールへ移管
+GRANT OWNERSHIP ON DATABASE DATASOURCE TO ROLE DATASOURCE_ADMIN COPY CURRENT GRANTS;
+GRANT OWNERSHIP ON ALL SCHEMAS IN DATABASE DATASOURCE TO ROLE DATASOURCE_ADMIN COPY CURRENT GRANTS;
+
+GRANT OWNERSHIP ON DATABASE SALES TO ROLE SALES_ADMIN COPY CURRENT GRANTS;
+GRANT OWNERSHIP ON ALL SCHEMAS IN DATABASE SALES TO ROLE SALES_ADMIN COPY CURRENT GRANTS;

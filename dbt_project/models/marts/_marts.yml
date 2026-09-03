@@ -1,0 +1,80 @@
+version: 2
+
+models:
+  - name: dim_account
+    description: 顧客アカウントディメンション
+    columns:
+      - name: account_id
+        tests: [not_null, unique]
+
+  - name: dim_asset
+    description: 資産ディメンション（エレベーター・エスカレーター等の納入号機情報）
+    columns:
+      - name: asset_id
+        tests: [not_null, unique]
+
+  - name: dim_building
+    description: 建物ディメンション（所在地・階数・所有者・施工会社等）
+    columns:
+      - name: building_id
+        tests: [not_null, unique]
+
+  - name: dim_date
+    description: 日付ディメンション（2020年〜今日+5年）
+    columns:
+      - name: date_key
+        tests: [not_null, unique]
+
+  - name: dim_department
+    description: 部門ディメンション（階層構造・エリア情報を含む）
+    columns:
+      - name: department_id
+        tests: [not_null, unique]
+
+  - name: dim_product
+    description: 商品ディメンション（商品コード・名称・ファミリー・有効状態等）
+    columns:
+      - name: product_id
+        tests: [not_null, unique]
+
+  - name: dim_record_type
+    description: レコードタイプディメンション（商談カテゴリ分類）
+    columns:
+      - name: record_type_id
+        tests: [not_null, unique]
+
+  - name: dim_user
+    description: ユーザーディメンション（商談担当者情報）
+    columns:
+      - name: user_id
+        tests: [not_null, unique]
+
+  - name: bridge_opportunity_asset
+    description: 商談-資産ブリッジテーブル（多対多リレーション解決用）
+    columns:
+      - name: opportunity_asset_id
+        tests: [not_null, unique]
+
+  - name: bridge_opportunity_building
+    description: 商談-建物ブリッジテーブル（多対多リレーション解決用）
+    columns:
+      - name: opportunity_building_id
+        tests: [not_null, unique]
+
+  - name: fact_opportunity
+    description: 商談ファクトテーブル（ディメンションキー＋メジャー）
+    columns:
+      - name: opportunity_id
+        tests: [not_null, unique]
+
+  - name: fact_opportunity_line_item
+    description: "商談品目ファクトテーブル（ヘッダ: stg_opportunity × 明細: stg_opportunity_line_item）"
+    columns:
+      - name: line_item_id
+        tests: [not_null, unique]
+
+  - name: gold_opportunity_wide
+    description: 商談ワイドテーブル（ファクト＋全ディメンション結合済み）- Tableau等BI抽出用
+
+  - name: gold_opportunity_line_item_wide
+    description: 商談品目ワイドテーブル（ファクト＋全ディメンション結合済み）- BI抽出用

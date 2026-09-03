@@ -1,0 +1,68 @@
+version: 2
+
+models:
+  - name: stg_account
+    description: 顧客アカウントデータのクレンジング済みテーブル（削除済みレコード除外）
+    columns:
+      - name: account_id
+        tests: [not_null, unique]
+
+  - name: stg_asset
+    description: 資産（納入号機）データのクレンジング済みテーブル（削除済みレコード除外）
+    columns:
+      - name: asset_id
+        tests: [not_null, unique]
+
+  - name: stg_building
+    description: 建物マスタデータのクレンジング済みテーブル（削除済みレコード除外）
+    columns:
+      - name: building_id
+        tests: [not_null, unique]
+
+  - name: stg_department
+    description: 部門マスタデータのクレンジング済みテーブル（削除済みレコード除外）
+    columns:
+      - name: department_id
+        tests: [not_null, unique]
+
+  - name: stg_opportunity
+    description: 商談データのクレンジング済みテーブル（削除済みレコード除外）
+    columns:
+      - name: opportunity_id
+        tests: [not_null, unique]
+
+  - name: stg_opportunity_asset
+    description: 商談-資産の関連テーブル（削除済みレコード除外）
+    columns:
+      - name: opportunity_asset_id
+        tests: [not_null, unique]
+
+  - name: stg_opportunity_building
+    description: 商談-建物の関連テーブル（削除済みレコード除外）
+    columns:
+      - name: opportunity_building_id
+        tests: [not_null, unique]
+
+  - name: stg_opportunity_line_item
+    description: 商談品目データのクレンジング済みテーブル（削除済みレコード除外）
+    columns:
+      - name: line_item_id
+        tests: [not_null, unique]
+
+  - name: stg_product
+    description: 商品マスタのクレンジング済みテーブル（削除済みレコード除外・列名標準化）
+    columns:
+      - name: product_id
+        tests: [not_null, unique]
+
+  - name: stg_record_type
+    description: レコードタイプマスタのクレンジング済みテーブル
+    columns:
+      - name: record_type_id
+        tests: [not_null, unique]
+
+  - name: stg_user
+    description: ユーザーデータのクレンジング済みテーブル
+    columns:
+      - name: user_id
+        tests: [not_null, unique]
