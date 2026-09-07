@@ -6,8 +6,10 @@
 --   外部ステージのファイルフォーマット定義 → 実ファイルを見て作成（下記は暫定CSV）
 --   自動取り込み方式 → 一旦COPY INTO
 --
--- 前提: 先方からS3バケット名・IAMロールARNの提供待ち（未確定・要置換）
--- 実行ロール: ACCOUNTADMIN（STORAGE INTEGRATION作成に必要）
+-- 前提:
+--   S3バケット名: snowflake-fujitec-storage / AWSアカウントID: 117047811671（確定）
+--   IAMロール名: snowflake-s3-inbound-role / プレフィックス: inbound/
+-- 実行ロール: STORAGE INTEGRATION作成は ACCOUNTADMIN、FILE FORMAT/STAGE作成は DATASOURCE_MANAGER
 -- =====================================================
 
 USE ROLE ACCOUNTADMIN;
@@ -16,8 +18,8 @@ CREATE STORAGE INTEGRATION IF NOT EXISTS SALESFORCE_S3_INT
   TYPE = EXTERNAL_STAGE
   STORAGE_PROVIDER = 'S3'
   ENABLED = TRUE
-  STORAGE_AWS_ROLE_ARN = '<TODO: 先方から提供されるIAMロールARN>'
-  STORAGE_ALLOWED_LOCATIONS = ('s3://<TODO: 先方バケット名>/<TODO: プレフィックス>/');
+  STORAGE_AWS_ROLE_ARN = 'arn:aws:iam::117047811671:role/snowflake-s3-inbound-role'
+  STORAGE_ALLOWED_LOCATIONS = ('s3://snowflake-fujitec-storage/inbound/');
 
 -- 作成後、以下で確認できる値を先方のIAMロール信頼ポリシーに追記依頼する
 -- DESC STORAGE INTEGRATION SALESFORCE_S3_INT;
@@ -30,8 +32,9 @@ GRANT USAGE ON INTEGRATION SALESFORCE_S3_INT TO ROLE DATASOURCE_RWM;
 -- ファイルフォーマット・外部ステージ
 -- 実ファイルの形式が未確認のため、暫定でCSVを仮置き。確認後に要修正
 -- ---------------------------------------------------
-USE ROLE DATASOURCE_RWM;
-USE WAREHOUSE SALES_WH;
+-- 以降はファンクショナルロールで実行（DATASOURCE_RWM を継承し、DATASOURCE_WH の USAGE を持つ）
+USE ROLE DATASOURCE_MANAGER;
+USE WAREHOUSE DATASOURCE_WH;
 
 CREATE FILE FORMAT IF NOT EXISTS DATASOURCE.COMMON.CSV_DEFAULT
   TYPE = CSV
@@ -44,7 +47,7 @@ CREATE FILE FORMAT IF NOT EXISTS DATASOURCE.COMMON.CSV_DEFAULT
 
 CREATE STAGE IF NOT EXISTS DATASOURCE.SALESFORCE.EXT_STAGE
   STORAGE_INTEGRATION = SALESFORCE_S3_INT
-  URL = 's3://<TODO: 先方バケット名>/<TODO: プレフィックス>/'
+  URL = 's3://snowflake-fujitec-storage/inbound/'
   FILE_FORMAT = DATASOURCE.COMMON.CSV_DEFAULT
   COMMENT = 'Salesforceエクスポート（S3経由）取り込み用外部ステージ';
 

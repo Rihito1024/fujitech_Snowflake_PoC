@@ -15,10 +15,11 @@ ALTER ACCOUNT SET TIMEZONE = 'Asia/Tokyo';
 -- クロスリージョン設定（AWSの日本リージョンのみ）
 -- Cortexのクロスリージョン推論はリージョングループ単位でしか指定できず、
 -- 「日本リージョンのみ」を表す単体の値は存在しない。
--- 東京(ap-northeast-1)はAWS_APACグループに属するため、域内(APAC)に限定する設定とする。
+-- 東京(ap-northeast-1)はAWS_APJグループに属するため、域内(APJ)に限定する設定とする。
+-- 指定可能値: DISABLED / ANY_REGION / AWS_US / AWS_EU / AWS_APJ / AZURE_US
 -- 実行前にSnowflake公式ドキュメントで最新の指定可能値を確認すること。
 -- ---------------------------------------------------
-ALTER ACCOUNT SET CORTEX_ENABLED_CROSS_REGION = 'AWS_APAC';
+ALTER ACCOUNT SET CORTEX_ENABLED_CROSS_REGION = 'AWS_APJ';
 
 -- ---------------------------------------------------
 -- Time Travel保持日数
