@@ -36,6 +36,24 @@ flowchart LR
 | `dbt_project/` | flatpad dbt プロジェクト。Databricks Lakeflow Declarative Pipelines を dbt-Snowflake に移植したもの。詳細は `dbt_project/README.md` |
 | `Snowflake検証向け：Flatpadデータパイプライン要件.pdf` | 先方から共有された要件資料 |
 
+## 接続先
+
+接続情報（アカウント・ユーザー・パスワード等）は **リポジトリ直下の `.env`** に置く。
+`.env` は `.gitignore` 済みで GitHub には上がらない。
+
+```bash
+cp .env.example .env      # 値を埋める
+set -a; source .env; set +a
+
+# Snowflake CLI 接続名 fujitech（~/.snowflake/connections.toml の空スタブを .env が上書き）
+snow sql -c fujitech -q "select current_account()"
+snow sql -c fujitech -f Snowflake/sql/00_accout_level_paramater.sql
+snow sql -c fujitech        # 対話セッション
+```
+
+dbt（`dbt_project/`）は `.env` の `DBT_SNOWFLAKE_USER` / `DBT_SNOWFLAKE_PASSWORD` を
+`profiles.yml` の `env_var()` で参照する。詳細は `dbt_project/README.md`。
+
 ## Snowflake セットアップ SQL の実行順
 
 | ファイル | 実行ロール | 概要 |
