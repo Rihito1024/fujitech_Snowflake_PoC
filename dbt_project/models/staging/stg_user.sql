@@ -1,7 +1,7 @@
 -- ユーザーデータのクレンジング済みテーブル
 with source as (
 
-    select * from {{ source('flatpad_bronze', 'user') }}
+    select * from {{ source('salesforce', 'user') }}
 
 ),
 

@@ -1,7 +1,7 @@
 -- レコードタイプマスタのクレンジング済みテーブル
 with source as (
 
-    select * from {{ source('flatpad_bronze', 'recordtype') }}
+    select * from {{ source('salesforce', 'recordtype') }}
 
 ),
 

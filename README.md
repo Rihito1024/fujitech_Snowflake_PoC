@@ -16,7 +16,7 @@ flowchart LR
             OF["Openflow / 外部ステージ"] --> RAW["SALESFORCE スキーマ<br/>Raw テーブル"]
         end
         subgraph SALES["SALES DB"]
-            RAW --> STG["ANALYTICS_INTERMEDIATE<br/>stg_* / 中間モデル"]
+            RAW --> STG["ANALYTICS_STAGING<br/>stg_* / ステージング"]
             STG --> MARTS["ANALYTICS_MARTS<br/>dim_* / fact_* / gold_*<br/>Semantic View"]
             ANALYTICS["ANALYTICS<br/>dbt / Task / Agent"]
         end
@@ -33,7 +33,7 @@ flowchart LR
 | --- | --- |
 | `Snowflake/構成.md` | Snowflake 環境の設計メモ（DB/スキーマ、ロール、WH、Integration、取り込み方式など）。図付き |
 | `Snowflake/sql/` | 環境構築用 DDL。`00` → `06` の順に実行する（下表参照） |
-| `dbt_project/` | flatpad dbt プロジェクト。Databricks Lakeflow Declarative Pipelines を dbt-Snowflake に移植したもの。詳細は `dbt_project/README.md` |
+| `dbt_project/` | 営業パイプライン用 dbt プロジェクト（Databricks Lakeflow Declarative Pipelines を dbt-Snowflake に移植）。`stg_*`（ステージング）→ `dim_*` / `fact_*` / `gold_*`（マート）。詳細は `dbt_project/README.md` |
 | `Snowflake検証向け：Flatpadデータパイプライン要件.pdf` | 先方から共有された要件資料 |
 
 ## Snowflake セットアップ SQL の実行順

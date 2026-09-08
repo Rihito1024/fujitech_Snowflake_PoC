@@ -1,7 +1,7 @@
 -- 部門マスタデータのクレンジング済みテーブル（削除済みレコード除外）
 with source as (
 
-    select * from {{ source('flatpad_bronze', 'departmentmst__c') }}
+    select * from {{ source('salesforce', 'departmentmst__c') }}
 
 ),
 
