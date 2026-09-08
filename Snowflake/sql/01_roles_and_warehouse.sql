@@ -88,7 +88,7 @@ GRANT ROLE DATASOURCE_WH_ADMIN TO ROLE DATASOURCE_ADMIN;
 -- ---------------------------------------------------
 -- dbt実行専用ファンクショナルロール（SALES_TRANSFORMER）
 -- 縦一本の user→developer→manager→Admin 階層には当てはまらない横串ロール。
---   - SALES__RWM     : silver/gold スキーマ・テーブル・ビューの作成 + 読み書き
+--   - SALES__RWM     : staging/marts スキーマ・テーブル・ビューの作成 + 読み書き
 --   - DATASOURCE__R  : raw(Salesforce)データの参照（SALES系ロールには未付与のため明示付与）
 --   - SALES_WH_USAGE : SALES_WH の利用
 -- 参照: ../構成.md #### Role（dbtはAnalyticsスキーマでbuildを実行）

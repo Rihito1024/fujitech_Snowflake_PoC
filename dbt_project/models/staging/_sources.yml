@@ -3,11 +3,9 @@ version: 2
 sources:
   - name: flatpad_bronze
     description: >
-      Salesforce由来のRawデータ (Bronze層)。元の Databricks バンドルでは
-      `{{ var('bronze_catalog') }}.{{ var('bronze_schema') }}` 配下のテーブル群。
-      Snowflake移行後は database/schema をdbt varsで指定する。
-    database: "{{ var('bronze_database') }}"
-    schema: "{{ var('bronze_schema') }}"
+      Salesforce由来のRawデータ
+    database: "DATASOURCE"
+    schema: "SALESFORCE"
     tables:
       - name: account
         description: 顧客アカウント（Salesforce Account）

@@ -1,7 +1,7 @@
 -- 顧客アカウントデータのクレンジング済みテーブル（削除済みレコード除外）
 with source as (
 
-    select * from {{ source('flatpad_bronze', 'account') }}
+    select * from {{ source('salesforce', 'account') }}
 
 ),
 

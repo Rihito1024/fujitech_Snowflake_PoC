@@ -1,7 +1,7 @@
 -- 商談-建物の関連テーブル（削除済みレコード除外）
 with source as (
 
-    select * from {{ source('flatpad_bronze', 'opportunitybuilding__c') }}
+    select * from {{ source('salesforce', 'opportunitybuilding__c') }}
 
 ),
 

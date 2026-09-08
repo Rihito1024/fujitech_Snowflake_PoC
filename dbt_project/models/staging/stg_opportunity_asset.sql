@@ -1,7 +1,7 @@
 -- 商談-資産の関連テーブル（削除済みレコード除外）
 with source as (
 
-    select * from {{ source('flatpad_bronze', 'opportunity_asset__c') }}
+    select * from {{ source('salesforce', 'opportunity_asset__c') }}
 
 ),
 
