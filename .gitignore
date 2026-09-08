@@ -2,3 +2,10 @@
 *.csv
 *.parquet
 *.xlsx
+
+# 接続情報・認証情報（GitHub に上げない）
+.env
+.env.*
+!.env.example
+*.p8
+*.pem
