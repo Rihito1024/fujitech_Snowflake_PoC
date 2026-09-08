@@ -44,7 +44,7 @@ flowchart LR
 | `01_roles_and_warehouse.sql` | SECURITYADMIN / SYSADMIN / ACCOUNTADMIN | ロール階層、`SALES_WH`、リソースモニター `SALES_RM` |
 | `02_databases_and_schemas.sql` | SYSADMIN | `DATASOURCE` / `SALES` DB とスキーマ、オーナーシップ移管 |
 | `03_grants.sql` | 各 DB の `*_ADMIN` | アクセスロールへの権限付与（DB 単位で一律、Future Grants 併用） |
-| `04_storage_integration_and_stage.sql` | ACCOUNTADMIN / DATASOURCE_RWM | S3 用 Storage Integration と外部ステージ（バケット名・IAM ロール ARN は先方提供待ち） |
+| `04_storage_integration_and_stage.sql` | ACCOUNTADMIN / DATASOURCE__RWM | S3 用 Storage Integration と外部ステージ（バケット名・IAM ロール ARN は先方提供待ち） |
 | `05_salesforce_external_access.sql` | ACCOUNTADMIN | Openflow → Salesforce API 疎通用の Network Rule / External Access Integration（サービスユーザー払い出し待ち） |
 | `06_users.sql` | SECURITYADMIN | Tableau サービスユーザー（PAT 認証）、営業ユーザー（テンプレート） |
 
