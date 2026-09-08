@@ -65,8 +65,12 @@ dbt（`dbt_project/`）は `.env` の `DBT_SNOWFLAKE_USER` / `DBT_SNOWFLAKE_PASS
 | `04_storage_integration_and_stage.sql` | ACCOUNTADMIN / DATASOURCE__RWM | S3 用 Storage Integration と外部ステージ（バケット名・IAM ロール ARN は先方提供待ち） |
 | `05_salesforce_external_access.sql` | ACCOUNTADMIN | Openflow → Salesforce API 疎通用の Network Rule / External Access Integration（サービスユーザー払い出し待ち） |
 | `06_users.sql` | SECURITYADMIN | Tableau サービスユーザー（PAT 認証）、営業ユーザー（テンプレート） |
+| `07_load_gold_opportunity_line_item_wide.sql` | SALES_MANAGER | CSV を `SALES.ANALYTICS_MARTS.GOLD_OPPORTUNITY_LINE_ITEM_WIDE` にロード（日本語ヘッダー対応） |
+| `08_cowork_agents.sql` | ACCOUNTADMIN / SECURITYADMIN / SALES_MANAGER / SALES_ADMIN | CoWork 権限、セマンティックビュー `SV_OPPORTUNITY_LINE_ITEM`、Cortex Agent `SALES_PIPELINE_AGENT` |
+| `09_tableau_pat.sql` | SECURITYADMIN / ACCOUNTADMIN | Tableau 用 PAT 発行（`SVC_TABLEAU`）、認証ポリシーで NW ポリシー要件を緩和 |
 
 `<TODO: ...>` プレースホルダは先方からの情報提供後に置換する。
+`08` は Cortex 実行部分がトライアルアカウントでは動かない（DDL は作成可）。詳細はファイル冒頭コメント。
 
 ## 進め方
 
