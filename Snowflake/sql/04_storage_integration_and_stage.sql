@@ -26,13 +26,13 @@ CREATE STORAGE INTEGRATION IF NOT EXISTS SALESFORCE_S3_INT
 --   STORAGE_AWS_IAM_USER_ARN -> Snowflake側の外部IAMユーザー
 --   STORAGE_AWS_EXTERNAL_ID  -> 外部ID
 
-GRANT USAGE ON INTEGRATION SALESFORCE_S3_INT TO ROLE DATASOURCE_RWM;
+GRANT USAGE ON INTEGRATION SALESFORCE_S3_INT TO ROLE DATASOURCE__RWM;
 
 -- ---------------------------------------------------
 -- ファイルフォーマット・外部ステージ
 -- 実ファイルの形式が未確認のため、暫定でCSVを仮置き。確認後に要修正
 -- ---------------------------------------------------
--- 以降はファンクショナルロールで実行（DATASOURCE_RWM を継承し、DATASOURCE_WH の USAGE を持つ）
+-- 以降はファンクショナルロールで実行（DATASOURCE__RWM を継承し、DATASOURCE_WH の USAGE を持つ）
 USE ROLE DATASOURCE_MANAGER;
 USE WAREHOUSE DATASOURCE_WH;
 

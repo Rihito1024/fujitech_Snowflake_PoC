@@ -19,6 +19,21 @@ CREATE USER IF NOT EXISTS SVC_TABLEAU
 GRANT ROLE SALES_USER TO USER SVC_TABLEAU;
 
 -- ---------------------------------------------------
+-- dbt実行用サービスユーザー
+-- ロールは SALES_TRANSFORMER（01_roles_and_warehouse.sql で作成）。
+-- 認証はキーペア推奨。PoCで簡易にPATを使う場合は SVC_TABLEAU と同様に
+-- ネットワークポリシー（TYPE=SERVICE は PAT にNP必須）と
+-- ADD PROGRAMMATIC ACCESS TOKEN ... ROLE_RESTRICTION = SALES_TRANSFORMER が必要。
+-- ---------------------------------------------------
+CREATE USER IF NOT EXISTS SVC_DBT
+  TYPE = SERVICE
+  DEFAULT_ROLE = SALES_TRANSFORMER
+  DEFAULT_WAREHOUSE = SALES_WH
+  COMMENT = 'dbt(build/run/test)実行用サービスユーザー。認証はキーペア推奨';
+
+GRANT ROLE SALES_TRANSFORMER TO USER SVC_DBT;
+
+-- ---------------------------------------------------
 -- ネットワークポリシー（PATの必須要件）
 -- TYPE=SERVICE のユーザーは PAT の「発行」も「利用」もネットワークポリシー必須。
 -- 未設定だと ALTER USER ... ADD PROGRAMMATIC ACCESS TOKEN が失敗する。

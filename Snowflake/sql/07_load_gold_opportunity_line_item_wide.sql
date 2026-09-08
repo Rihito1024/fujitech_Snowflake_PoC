@@ -15,7 +15,7 @@
 --   - 日付 DATE / タイムスタンプ TIMESTAMP_TZ（値は "...Z" のUTC。AUTOで解釈）
 --   - true/false は BOOLEAN、その他は VARCHAR
 --   - 全行NULLで判定不能な列は VARCHAR のまま（コメントに推定型を記載）
--- 実行ロール: SALES_MANAGER（SALES_RWM を継承 ＋ SALES_WH USAGE を保有）
+-- 実行ロール: SALES_MANAGER（SALES__RWM を継承 ＋ SALES_WH USAGE を保有）
 -- =====================================================
 
 USE ROLE SALES_MANAGER;
