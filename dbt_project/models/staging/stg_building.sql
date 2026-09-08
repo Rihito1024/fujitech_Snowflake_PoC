@@ -1,7 +1,7 @@
 -- 建物マスタデータのクレンジング済みテーブル（削除済みレコード除外）
 with source as (
 
-    select * from {{ source('salesforce', 'building__c') }}
+    select * from {{ source('salesforce', 'BUILDING__C') }}
 
 ),
 

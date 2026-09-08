@@ -1,7 +1,7 @@
 -- 資産（納入号機）データのクレンジング済みテーブル（削除済みレコード除外）
 with source as (
 
-    select * from {{ source('salesforce', 'asset') }}
+    select * from {{ source('salesforce', 'ASSET') }}
 
 ),
 

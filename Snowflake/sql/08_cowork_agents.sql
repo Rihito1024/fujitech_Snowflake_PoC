@@ -15,8 +15,8 @@
 --     SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT で管理する。
 --
 -- ロール継承（01_roles_and_warehouse.sql）:
---   SALES_R ⊂ SALES_USER ⊂ SALES_DEVELOPER ⊂ SALES_MANAGER ⊂ SALES_ADMIN
---   → 利用者向けの USAGE は SALES_R に寄せれば SALES_USER 以上へ自動継承される。
+--   SALES__R ⊂ SALES_USER ⊂ SALES_DEVELOPER ⊂ SALES_MANAGER ⊂ SALES_ADMIN
+--   → 利用者向けの USAGE は SALES__R に寄せれば SALES_USER 以上へ自動継承される。
 -- =====================================================
 
 -- ---------------------------------------------------
@@ -34,9 +34,9 @@ CREATE SNOWFLAKE INTELLIGENCE IF NOT EXISTS SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAUL
 GRANT MODIFY ON SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT TO ROLE SALES_ADMIN;
 
 -- CoWork UI で公開エージェントと設定を見られるように（USAGE）
-GRANT USAGE ON SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT TO ROLE SALES_R;
+GRANT USAGE ON SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT TO ROLE SALES__R;
 -- 参照系(DATASOURCE)ユーザーにも CoWork を見せる場合はコメント解除
--- GRANT USAGE ON SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT TO ROLE DATASOURCE_R;
+-- GRANT USAGE ON SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT TO ROLE DATASOURCE__R;
 
 -- ---------------------------------------------------
 -- B) Cortex / Agents 利用のためのデータベースロール
@@ -217,7 +217,7 @@ $$;
 -- ---------------------------------------------------
 -- D) オブジェクト作成後の利用者向け USAGE 付与テンプレート
 --    Search サービス / エージェント / カスタムツールを
---    作成したら、名前を埋めて実行する。付与先は SALES_R（SALES_USER が継承）。
+--    作成したら、名前を埋めて実行する。付与先は SALES__R（SALES_USER が継承）。
 -- ---------------------------------------------------
 USE ROLE SALES_MANAGER;   -- 各オブジェクトのオーナー想定
 
@@ -234,7 +234,7 @@ GRANT USAGE ON AGENT SALES.ANALYTICS.SALES_PIPELINE_AGENT TO ROLE SALES__R;
 -- カスタムツール（ストアドプロシージャ / UDF）を使う場合
 -- GRANT USAGE ON PROCEDURE SALES.ANALYTICS.<proc名>(<引数型,...>) TO ROLE SALES__R;
 
--- 元テーブルの SELECT・スキーマ USAGE は 03_grants.sql の SALES_R 付与で充足済み。
+-- 元テーブルの SELECT・スキーマ USAGE は 03_grants.sql の SALES__R 付与で充足済み。
 -- ツールのどれか1つでも権限不足だと、そのリクエストは 4XX で拒否される点に注意。
 
 -- ---------------------------------------------------

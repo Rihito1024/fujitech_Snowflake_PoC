@@ -1,7 +1,7 @@
 -- 商談品目データのクレンジング済みテーブル（削除済みレコード除外）
 with source as (
 
-    select * from {{ source('salesforce', 'opportunitylineitem') }}
+    select * from {{ source('salesforce', 'OPPORTUNITYLINEITEM') }}
 
 ),
 

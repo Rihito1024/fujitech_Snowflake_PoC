@@ -1,36 +1,37 @@
 version: 2
 
 sources:
-  - name: flatpad_bronze
+  - name: salesforce
     description: >
       Salesforce由来のRawデータ
     database: "DATASOURCE"
     schema: "SALESFORCE"
     tables:
-      - name: account
+      # name は実テーブル名に合わせる（Openflow は引用符なし作成 = Snowflake 上は大文字）。
+      # モデル側の source('salesforce', '<NAME>') も同じ大文字を使う。
+      - name: ACCOUNT
         description: 顧客アカウント（Salesforce Account）
-      - name: asset
+      - name: ASSET
         description: 資産（納入号機。Salesforce Asset）
-      - name: building__c
+      - name: BUILDING__C
         description: 建物マスタ（Salesforce カスタムオブジェクト Building__c）
-      - name: departmentmst__c
+      - name: DEPARTMENTMST__C
         description: 部門マスタ（Salesforce カスタムオブジェクト DepartmentMst__c）
-      - name: opportunity
+      - name: OPPORTUNITY
         description: 商談（Salesforce Opportunity）
-      - name: opportunity_asset__c
+      - name: OPPORTUNITY_ASSET__C
         description: 商談-資産の関連（Salesforce カスタムオブジェクト Opportunity_Asset__c）
-      - name: opportunitybuilding__c
+      - name: OPPORTUNITYBUILDING__C
         description: 商談-建物の関連（Salesforce カスタムオブジェクト OpportunityBuilding__c）
-      - name: opportunitylineitem
+      - name: OPPORTUNITYLINEITEM
         description: 商談品目（Salesforce OpportunityLineItem）
-      - name: product2
+      - name: PRODUCT2
         description: 商品マスタ（Salesforce Product2）
-      - name: recordtype
+      - name: RECORDTYPE
         description: レコードタイプマスタ（Salesforce RecordType）
-      - name: user
+      - name: USER
         description: >
           ユーザーマスタ（Salesforce User）。"USER" はSnowflakeの予約語のため
-          quoting.identifier を有効化している。実テーブルの識別子ケースに応じて
-          必要なら調整すること。
+          quoting.identifier を有効化して引用符付きで参照する。
         quoting:
           identifier: true

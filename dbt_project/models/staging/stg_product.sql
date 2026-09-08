@@ -1,7 +1,7 @@
 -- 商品マスタのクレンジング済みテーブル（削除済みレコード除外・列名標準化）
 with source as (
 
-    select * from {{ source('salesforce', 'product2') }}
+    select * from {{ source('salesforce', 'PRODUCT2') }}
 
 ),
 

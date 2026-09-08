@@ -62,6 +62,36 @@ ALTER USER SVC_TABLEAU SET NETWORK_POLICY = TABLEAU_PAT_NP;
 --   DAYS_TO_EXPIRY = 90;
 
 -- ---------------------------------------------------
+-- Openflow → Snowflake 書き込み用サービスユーザー
+-- Openflow の Salesforce コネクタが Snowflake へ書き込む際の接続ユーザー。
+-- ロールは DATASOURCE_OPENFLOW（05_salesforce_external_access.sql (D) で作成）。
+--   → ランタイム実行ロールと同じにして権限を1本化。書き込み先権限は
+--     03_grants.sql の DATASOURCE__RWM（DATASOURCE.SALESFORCE への CREATE TABLE / DML）で充足。
+-- 認証は RSA キーペア。TYPE=SERVICE + キーペアはネットワークポリシー不要（PAT と異なる）。
+-- 秘密鍵は Openflow(SPCS) の Snowflake Private Key Service パラメータにのみ保持し手元に残さない。
+-- ---------------------------------------------------
+CREATE USER IF NOT EXISTS SVC_OPENFLOW
+  TYPE = SERVICE
+  DEFAULT_ROLE = DATASOURCE_OPENFLOW
+  DEFAULT_WAREHOUSE = OPENFLOW_WH
+  COMMENT = 'Openflow Salesforceコネクタの Snowflake 書き込み用。キーペア認証';
+
+GRANT ROLE DATASOURCE_OPENFLOW TO USER SVC_OPENFLOW;
+
+-- 公開鍵を登録（BEGIN/END 行と改行を除いた base64 本体のみ）。
+--   生成例:
+--     openssl genrsa 2048 | openssl pkcs8 -topk8 -v2 aes-256-cbc -inform PEM -out sf_openflow.p8
+--     openssl pkey -in sf_openflow.p8 -pubout -out sf_openflow.pub
+--   秘密鍵 sf_openflow.p8 全文 → Openflow の Snowflake Private Key
+--   パスフレーズ            → Openflow の Snowflake Private Key Password
+-- ALTER USER SVC_OPENFLOW SET RSA_PUBLIC_KEY = '<sf_openflow.pub の中身>';
+-- 確認: DESC USER SVC_OPENFLOW;  → RSA_PUBLIC_KEY_FP が入っていればOK
+
+-- 無停止ローテーション: 新鍵を _2 側に入れて Openflow を切替→旧鍵を除去
+-- ALTER USER SVC_OPENFLOW SET RSA_PUBLIC_KEY_2 = '<新しい公開鍵>';
+-- ALTER USER SVC_OPENFLOW UNSET RSA_PUBLIC_KEY;   -- 切替確認後
+
+-- ---------------------------------------------------
 -- 営業ユーザー（人）
 -- 実際の氏名・メールアドレス・ログイン名に置き換えて作成すること
 -- 複数名いる場合は本ブロックを人数分複製する
