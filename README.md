@@ -32,7 +32,8 @@ flowchart LR
 | パス | 内容 |
 | --- | --- |
 | `Snowflake/構成.md` | Snowflake 環境の設計メモ（DB/スキーマ、ロール、WH、Integration、取り込み方式など）。図付き |
-| `Snowflake/sql/` | 環境構築用 DDL。`00` → `06` の順に実行する（下表参照） |
+| `Snowflake/sql/` | 環境構築用 DDL。`00` から順に実行する（下表参照） |
+| `Snowflake/docs/` | 先方向け手順書。`tableau_cloud_connection_setup.md`（Tableau Cloud ⇔ Snowflake 接続） |
 | `dbt_project/` | 営業パイプライン用 dbt プロジェクト（Databricks Lakeflow Declarative Pipelines を dbt-Snowflake に移植）。`stg_*`（ステージング）→ `dim_*` / `fact_*` / `gold_*`（マート）。詳細は `dbt_project/README.md` |
 | `Snowflake検証向け：Flatpadデータパイプライン要件.pdf` | 先方から共有された要件資料 |
 
@@ -64,9 +65,12 @@ dbt（`dbt_project/`）は `.env` の `DBT_SNOWFLAKE_USER` / `DBT_SNOWFLAKE_PASS
 | `03_grants.sql` | 各 DB の `*_ADMIN` | アクセスロールへの権限付与（DB 単位で一律、Future Grants 併用） |
 | `04_storage_integration_and_stage.sql` | ACCOUNTADMIN / DATASOURCE__RWM | S3 用 Storage Integration と外部ステージ（バケット名・IAM ロール ARN は先方提供待ち） |
 | `05_salesforce_external_access.sql` | ACCOUNTADMIN | Openflow → Salesforce API 疎通用の Network Rule / External Access Integration（サービスユーザー払い出し待ち） |
-| `06_users.sql` | SECURITYADMIN | Tableau サービスユーザー（PAT 認証）、営業ユーザー（テンプレート） |
+| `06_users.sql` | SECURITYADMIN | Tableau サービスユーザー `SVC_TABLEAU`（PAT 認証 + ネットワークポリシー）、dbt サービスユーザー、営業ユーザー（テンプレート）。PAT 発行は Snowsight で手動実行 |
+| `07_load_gold_opportunity_line_item_wide.sql` | SALES_MANAGER | CSV を `SALES.ANALYTICS_MARTS.GOLD_OPPORTUNITY_LINE_ITEM_WIDE` にロード（日本語ヘッダー対応） |
+| `08_cowork_agents.sql` | ACCOUNTADMIN ほか | CoWork 権限、セマンティックビュー、Cortex Agent（Cortex 実行はトライアルアカウントで不可） |
 
 `<TODO: ...>` プレースホルダは先方からの情報提供後に置換する。
+Tableau Cloud からの接続手順（先方作業を含む）は `Snowflake/docs/tableau_cloud_connection_setup.md`。
 
 ## 進め方
 
