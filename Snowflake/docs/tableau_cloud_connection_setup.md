@@ -3,6 +3,10 @@
 Salesforce 由来の営業データ（Snowflake 上のマート）を Tableau Cloud から参照するための
 接続手順書です。認証は **PAT（Programmatic Access Token）** を使用します。
 
+> 先方提出用のスライド版: `Tableau_Cloud接続手順書_フジテック様.pptx`（本 md が内容の元。
+> 生成スクリプトは `build_tableau_deck.py`。エクスチュア公式テンプレート `template.pptx` を
+> リポジトリ直下に置いて `python Snowflake/docs/build_tableau_deck.py` で再生成）。
+
 - 対象データ: 商談品目ワイドテーブル（1 行 = 商談 × 商品明細）
 - 接続ユーザー: `SVC_TABLEAU`（参照専用のサービスユーザー）
 - 想定所要時間: 15 分程度

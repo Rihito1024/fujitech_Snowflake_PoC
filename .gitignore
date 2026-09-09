@@ -9,3 +9,6 @@
 !.env.example
 *.p8
 *.pem
+
+# エクスチュア公式パワポテンプレート（社内 Exportal から入手。リポジトリには含めない）
+/template.pptx
