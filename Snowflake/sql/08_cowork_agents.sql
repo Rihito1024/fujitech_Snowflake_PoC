@@ -74,89 +74,200 @@ GRANT CREATE AGENT, CREATE CORTEX SEARCH SERVICE, CREATE SEMANTIC VIEW
 -- C2) セマンティックビュー作成（Cortex Analyst のデータソース）
 --    対象: SALES.ANALYTICS_MARTS.GOLD_OPPORTUNITY_LINE_ITEM_WIDE（商談品目ワイド）
 --    - 1行 = 商談 × 商品明細。dbt marts の gold_opportunity_line_item_wide 相当。
---    - 論理名（AS の左辺）に日本語を使うため全て二重引用符で囲む。
+--
+--    ★ Cortex Analyst / CoWork は「日本語（引用符付き）識別子」を扱えない。
+--      - 論理名（table/dimension/fact/metric 名）は当然 ASCII 必須。
+--      - さらに、セマンティックビューが参照する【物理列名】も ASCII でないと
+--        CoWork 実行時に `invalid column name "..."` で落ちる
+--        （`SELECT ... FROM SEMANTIC_VIEW(...)` の直接実行は Snowflake エンジンが
+--         処理するので通るが、CoWork 経由の text-to-SQL パスは通らない）。
+--      → 対策: 日本語テーブルの上に「英語カラム名のビュー」を1枚かませ、
+--        セマンティックビューはそのビュー（V_OPPORTUNITY_LINE_ITEM）だけを参照する。
+--        日本語 → 英語の対応はこのビューの AS で1回だけ定義する。
+--      → 日本語の呼び名は WITH SYNONYMS / COMMENT に入れる。
+--        LLM の項目マッチはシノニム／コメントを見るので、日本語で質問しても正しくヒットする。
+--
 --    - FACTS   = 行レベルの数値列（メトリクスの材料）
 --      DIMENSIONS = 集計軸（カテゴリ・日付）
---      METRICS = 集計式（Cortex Analyst が回答に使う指標）
---    - WITH SYNONYMS は自然言語の言い換え。回答精度に効くので実運用で追記する。
+--      METRICS = 集計式（Cortex Analyst が回答に使う指標）。式の中は論理名で参照。
 --    実行ロール: SALES_MANAGER（SALES_RWM の CREATE SEMANTIC VIEW を継承）
 -- ---------------------------------------------------
 USE ROLE SALES_MANAGER;
 USE WAREHOUSE SALES_WH;
 USE SCHEMA SALES.ANALYTICS_MARTS;
 
+-- C2-a) 英語カラム名ビュー（日本語テーブルからの薄いリネームだけ。ロジックは持たせない）
+CREATE OR REPLACE VIEW SALES.ANALYTICS_MARTS.V_OPPORTUNITY_LINE_ITEM
+  COMMENT = 'GOLD_OPPORTUNITY_LINE_ITEM_WIDE の英語カラム名エイリアス（Cortex Analyst 用）'
+AS
+SELECT
+  "品目ID"                   AS line_item_id,
+  "案件ID"                   AS opportunity_id,
+  "案件名"                    AS opportunity_name,
+  "工事番号"                  AS construction_number,
+  "品目レコードタイプ"        AS line_item_record_type,
+  "フェーズ"                  AS phase,
+  "フォーキャストカテゴリ名"  AS forecast_category_name,
+  "受注見込み・応札方針"      AS win_prospect_bid_policy,
+  "クローズ済み"              AS is_closed,
+  "受注済み"                  AS is_won,
+  "クローズ日"                AS close_date,
+  "クローズ年"                AS close_year,
+  "クローズ月"                AS close_month,
+  "クローズ四半期"            AS close_quarter,
+  "クローズ会計年度"          AS close_fiscal_year,
+  "クローズ年月"              AS close_year_month,
+  "クローズ年四半期"          AS close_year_quarter,
+  "受注予定日"                AS expected_order_date,
+  "受注予定年度"              AS expected_order_fiscal_year,
+  "受注予定年月"              AS expected_order_year_month,
+  "商品コード"                AS product_code,
+  "商品名"                    AS product_name,
+  "商品ファミリー"            AS product_family,
+  "顧客名（契約先）"          AS customer_name,
+  "請求先都道府県"            AS billing_prefecture,
+  "請求先市区町村"            AS billing_city,
+  "設計事務所"                AS design_office,
+  "建物所有者（施主）"        AS building_owner,
+  "主担当者"                  AS primary_owner,
+  "主担当者役職"              AS primary_owner_title,
+  "主担当部署"                AS primary_department,
+  "上位部署名"                AS parent_department_name,
+  "受注エリア"                AS order_area,
+  "受注店所"                  AS order_branch,
+  "レコードタイプ名"          AS record_type_name,
+  "台数"                      AS qty,
+  "合計金額"                  AS total_amount,
+  "見積金額"                  AS quote_amount,
+  "提示金額"                  AS proposed_amount,
+  "利益"                      AS profit,
+  "利益率"                    AS profit_rate,
+  "小計"                      AS subtotal,
+  "定価"                      AS list_price
+FROM SALES.ANALYTICS_MARTS.GOLD_OPPORTUNITY_LINE_ITEM_WIDE;
+
+-- 利用者ロールからも参照できるように（セマンティックビューは実行ユーザー権限で下層を読む）
+GRANT SELECT ON VIEW SALES.ANALYTICS_MARTS.V_OPPORTUNITY_LINE_ITEM TO ROLE SALES__R;
+
+-- C2-b) セマンティックビュー（参照先は英語ビューのみ。日本語識別子はゼロ）
 CREATE OR REPLACE SEMANTIC VIEW SALES.ANALYTICS_MARTS.SV_OPPORTUNITY_LINE_ITEM
   TABLES (
-    OLI AS SALES.ANALYTICS_MARTS.GOLD_OPPORTUNITY_LINE_ITEM_WIDE
-      PRIMARY KEY ("品目ID")
+    OLI AS SALES.ANALYTICS_MARTS.V_OPPORTUNITY_LINE_ITEM
+      PRIMARY KEY (line_item_id)
       WITH SYNONYMS = ('商談品目', '案件品目', '受注明細', 'opportunity line item')
-      COMMENT = '商談品目ワイドテーブル。1行=商談×商品明細。'
+      COMMENT = '商談品目ワイド。1行=商談×商品明細。'
   )
   FACTS (
-    OLI."台数"     AS OLI."台数"     COMMENT = '明細の台数（号機数）',
-    OLI."合計金額" AS OLI."合計金額" COMMENT = '明細の合計金額（円）',
-    OLI."見積金額" AS OLI."見積金額" COMMENT = '明細の見積金額（円）',
-    OLI."提示金額" AS OLI."提示金額" COMMENT = '顧客への提示金額（円）',
-    OLI."利益"     AS OLI."利益"     COMMENT = '明細の利益額（円）',
-    OLI."利益率"   AS OLI."利益率"   COMMENT = '利益率（元データの比率値。単位は要確認）',
-    OLI."小計"     AS OLI."小計"     COMMENT = '明細の小計（円）',
-    OLI."定価"     AS OLI."定価"     COMMENT = '定価（円）'
+    OLI.qty              AS qty              COMMENT = '明細の台数（号機数）。日本語名: 台数',
+    OLI.total_amount     AS total_amount     COMMENT = '明細の合計金額（円）。日本語名: 合計金額',
+    OLI.quote_amount     AS quote_amount     COMMENT = '明細の見積金額（円）。日本語名: 見積金額',
+    OLI.proposed_amount  AS proposed_amount  COMMENT = '顧客への提示金額（円）。日本語名: 提示金額',
+    OLI.profit           AS profit           COMMENT = '明細の利益額（円）。日本語名: 利益',
+    OLI.profit_rate      AS profit_rate      COMMENT = '利益率（元データの比率値。単位は要確認）。日本語名: 利益率',
+    OLI.subtotal         AS subtotal         COMMENT = '明細の小計（円）。日本語名: 小計',
+    OLI.list_price       AS list_price       COMMENT = '定価（円）。日本語名: 定価'
   )
   DIMENSIONS (
-    OLI."案件ID"               AS OLI."案件ID"               COMMENT = '商談（案件）を一意に識別するID',
-    OLI."案件名"               AS OLI."案件名"               WITH SYNONYMS = ('商談名', 'オポチュニティ名') COMMENT = '商談（案件）の名称',
-    OLI."工事番号"             AS OLI."工事番号"             COMMENT = '工事番号',
-    OLI."品目レコードタイプ"   AS OLI."品目レコードタイプ"   COMMENT = '品目のレコードタイプ',
-    OLI."フェーズ"             AS OLI."フェーズ"             WITH SYNONYMS = ('ステージ', '商談ステージ', 'stage') COMMENT = '商談のフェーズ（ステージ）',
-    OLI."フォーキャストカテゴリ名" AS OLI."フォーキャストカテゴリ名" COMMENT = 'フォーキャストカテゴリ名',
-    OLI."受注見込み・応札方針" AS OLI."受注見込み・応札方針" COMMENT = '受注見込み・応札方針',
-    OLI."クローズ済み"         AS OLI."クローズ済み"         COMMENT = '商談がクローズ済みか（TRUE/FALSE）',
-    OLI."受注済み"             AS OLI."受注済み"             WITH SYNONYMS = ('受注', '成約', 'Won') COMMENT = '受注（成約）済みか（TRUE/FALSE）',
-    OLI."クローズ日"           AS OLI."クローズ日"           COMMENT = '商談のクローズ日',
-    OLI."クローズ年"           AS OLI."クローズ年"           COMMENT = 'クローズ日の年',
-    OLI."クローズ月"           AS OLI."クローズ月"           COMMENT = 'クローズ日の月（1〜12）',
-    OLI."クローズ四半期"       AS OLI."クローズ四半期"       COMMENT = 'クローズ日の四半期（1〜4）',
-    OLI."クローズ会計年度"     AS OLI."クローズ会計年度"     COMMENT = 'クローズ日の会計年度',
-    OLI."クローズ年月"         AS OLI."クローズ年月"         COMMENT = 'クローズ年月（例: 2025-12）',
-    OLI."クローズ年四半期"     AS OLI."クローズ年四半期"     COMMENT = 'クローズ年四半期（例: 2025-Q3）',
-    OLI."受注予定日"           AS OLI."受注予定日"           COMMENT = '受注予定日',
-    OLI."受注予定年度"         AS OLI."受注予定年度"         COMMENT = '受注予定日の会計年度',
-    OLI."受注予定年月"         AS OLI."受注予定年月"         COMMENT = '受注予定年月（例: 2024-02）',
-    OLI."商品コード"           AS OLI."商品コード"           COMMENT = '商品コード',
-    OLI."商品名"               AS OLI."商品名"               WITH SYNONYMS = ('製品名', 'プロダクト名') COMMENT = '商品名',
-    OLI."商品ファミリー"       AS OLI."商品ファミリー"       COMMENT = '商品ファミリー（カテゴリ）',
-    OLI."顧客名"               AS OLI."顧客名（契約先）"     WITH SYNONYMS = ('取引先', 'アカウント', '契約先', 'customer') COMMENT = '顧客名（契約先アカウント）',
-    OLI."請求先都道府県"       AS OLI."請求先都道府県"       COMMENT = '請求先の都道府県',
-    OLI."請求先市区町村"       AS OLI."請求先市区町村"       COMMENT = '請求先の市区町村',
-    OLI."設計事務所"           AS OLI."設計事務所"           COMMENT = '設計事務所名',
-    OLI."建物所有者"           AS OLI."建物所有者（施主）"   COMMENT = '建物所有者（施主）名',
-    OLI."主担当者"             AS OLI."主担当者"             WITH SYNONYMS = ('営業担当', '担当者', 'オーナー') COMMENT = '商談の主担当者',
-    OLI."主担当者役職"         AS OLI."主担当者役職"         COMMENT = '主担当者の役職',
-    OLI."主担当部署"           AS OLI."主担当部署"           WITH SYNONYMS = ('部署', '営業部署') COMMENT = '主担当者の部署',
-    OLI."上位部署名"           AS OLI."上位部署名"           COMMENT = '主担当部署の上位部署',
-    OLI."受注エリア"           AS OLI."受注エリア"           WITH SYNONYMS = ('エリア', '地域') COMMENT = '受注エリア',
-    OLI."受注店所"             AS OLI."受注店所"             WITH SYNONYMS = ('店所', '支店') COMMENT = '受注店所',
-    OLI."レコードタイプ名"     AS OLI."レコードタイプ名"     COMMENT = '商談のレコードタイプ名'
+    OLI.line_item_id             AS line_item_id
+      WITH SYNONYMS = ('品目ID', '明細ID') COMMENT = '品目（明細）を一意に識別するID',
+    OLI.opportunity_id           AS opportunity_id
+      WITH SYNONYMS = ('案件ID', '商談ID') COMMENT = '商談（案件）を一意に識別するID',
+    OLI.opportunity_name         AS opportunity_name
+      WITH SYNONYMS = ('案件名', '商談名', 'オポチュニティ名') COMMENT = '商談（案件）の名称',
+    OLI.construction_number      AS construction_number
+      WITH SYNONYMS = ('工事番号') COMMENT = '工事番号',
+    OLI.line_item_record_type    AS line_item_record_type
+      WITH SYNONYMS = ('品目レコードタイプ') COMMENT = '品目のレコードタイプ',
+    OLI.phase                    AS phase
+      WITH SYNONYMS = ('フェーズ', 'ステージ', '商談ステージ', 'stage') COMMENT = '商談のフェーズ（ステージ）',
+    OLI.forecast_category_name   AS forecast_category_name
+      WITH SYNONYMS = ('フォーキャストカテゴリ名', 'フォーキャストカテゴリ') COMMENT = 'フォーキャストカテゴリ名',
+    OLI.win_prospect_bid_policy  AS win_prospect_bid_policy
+      WITH SYNONYMS = ('受注見込み・応札方針', '応札方針') COMMENT = '受注見込み・応札方針',
+    OLI.is_closed                AS is_closed
+      WITH SYNONYMS = ('クローズ済み', 'クローズ') COMMENT = '商談がクローズ済みか（TRUE/FALSE）',
+    OLI.is_won                   AS is_won
+      WITH SYNONYMS = ('受注済み', '受注', '成約', 'Won') COMMENT = '受注（成約）済みか（TRUE/FALSE）',
+    OLI.close_date               AS close_date
+      WITH SYNONYMS = ('クローズ日') COMMENT = '商談のクローズ日',
+    OLI.close_year               AS close_year
+      WITH SYNONYMS = ('クローズ年') COMMENT = 'クローズ日の年',
+    OLI.close_month              AS close_month
+      WITH SYNONYMS = ('クローズ月') COMMENT = 'クローズ日の月（1〜12）',
+    OLI.close_quarter            AS close_quarter
+      WITH SYNONYMS = ('クローズ四半期') COMMENT = 'クローズ日の四半期（1〜4）',
+    OLI.close_fiscal_year        AS close_fiscal_year
+      WITH SYNONYMS = ('クローズ会計年度', '会計年度', '年度') COMMENT = 'クローズ日の会計年度',
+    OLI.close_year_month         AS close_year_month
+      WITH SYNONYMS = ('クローズ年月') COMMENT = 'クローズ年月（例: 2025-12）',
+    OLI.close_year_quarter       AS close_year_quarter
+      WITH SYNONYMS = ('クローズ年四半期') COMMENT = 'クローズ年四半期（例: 2025-Q3）',
+    OLI.expected_order_date      AS expected_order_date
+      WITH SYNONYMS = ('受注予定日') COMMENT = '受注予定日',
+    OLI.expected_order_fiscal_year AS expected_order_fiscal_year
+      WITH SYNONYMS = ('受注予定年度') COMMENT = '受注予定日の会計年度',
+    OLI.expected_order_year_month AS expected_order_year_month
+      WITH SYNONYMS = ('受注予定年月') COMMENT = '受注予定年月（例: 2024-02）',
+    OLI.product_code             AS product_code
+      WITH SYNONYMS = ('商品コード') COMMENT = '商品コード',
+    OLI.product_name             AS product_name
+      WITH SYNONYMS = ('商品名', '製品名', 'プロダクト名') COMMENT = '商品名',
+    OLI.product_family           AS product_family
+      WITH SYNONYMS = ('商品ファミリー', '商品カテゴリ') COMMENT = '商品ファミリー（カテゴリ）',
+    OLI.customer_name            AS customer_name
+      WITH SYNONYMS = ('顧客名', '取引先', 'アカウント', '契約先', 'customer') COMMENT = '顧客名（契約先アカウント）',
+    OLI.billing_prefecture       AS billing_prefecture
+      WITH SYNONYMS = ('請求先都道府県', '都道府県') COMMENT = '請求先の都道府県',
+    OLI.billing_city             AS billing_city
+      WITH SYNONYMS = ('請求先市区町村', '市区町村') COMMENT = '請求先の市区町村',
+    OLI.design_office            AS design_office
+      WITH SYNONYMS = ('設計事務所') COMMENT = '設計事務所名',
+    OLI.building_owner           AS building_owner
+      WITH SYNONYMS = ('建物所有者', '施主') COMMENT = '建物所有者（施主）名',
+    OLI.primary_owner            AS primary_owner
+      WITH SYNONYMS = ('主担当者', '営業担当', '担当者', 'オーナー') COMMENT = '商談の主担当者',
+    OLI.primary_owner_title      AS primary_owner_title
+      WITH SYNONYMS = ('主担当者役職', '役職') COMMENT = '主担当者の役職',
+    OLI.primary_department       AS primary_department
+      WITH SYNONYMS = ('主担当部署', '部署', '営業部署') COMMENT = '主担当者の部署',
+    OLI.parent_department_name   AS parent_department_name
+      WITH SYNONYMS = ('上位部署名', '上位部署') COMMENT = '主担当部署の上位部署',
+    OLI.order_area               AS order_area
+      WITH SYNONYMS = ('受注エリア', 'エリア', '地域') COMMENT = '受注エリア',
+    OLI.order_branch             AS order_branch
+      WITH SYNONYMS = ('受注店所', '店所', '支店') COMMENT = '受注店所',
+    OLI.record_type_name         AS record_type_name
+      WITH SYNONYMS = ('レコードタイプ名') COMMENT = '商談のレコードタイプ名'
   )
   METRICS (
-    OLI."品目件数"     AS COUNT(OLI."品目ID")                                          COMMENT = '明細（品目）の件数',
-    OLI."案件数"       AS COUNT(DISTINCT OLI."案件ID")                                 COMMENT = '商談（案件）のユニーク件数',
-    OLI."合計金額合計" AS SUM(OLI."合計金額")                                          COMMENT = '合計金額の総和（円）',
-    OLI."見積金額合計" AS SUM(OLI."見積金額")                                          COMMENT = '見積金額の総和（円）',
-    OLI."提示金額合計" AS SUM(OLI."提示金額")                                          COMMENT = '提示金額の総和（円）',
-    OLI."利益合計"     AS SUM(OLI."利益")                                              COMMENT = '利益額の総和（円）',
-    OLI."台数合計"     AS SUM(OLI."台数")                                              COMMENT = '台数の総和',
-    OLI."平均利益率"   AS AVG(OLI."利益率")                                            COMMENT = '利益率の平均（元データの比率値の単純平均）',
-    OLI."受注案件数"   AS COUNT(DISTINCT CASE WHEN OLI."受注済み" THEN OLI."案件ID" END) COMMENT = '受注済み商談のユニーク件数',
-    OLI."受注金額合計" AS SUM(CASE WHEN OLI."受注済み" THEN OLI."合計金額" END)         COMMENT = '受注済み明細の合計金額の総和（円）'
+    OLI.line_item_count      AS COUNT(OLI.line_item_id)
+      WITH SYNONYMS = ('品目件数', '明細件数') COMMENT = '明細（品目）の件数',
+    OLI.opportunity_count    AS COUNT(DISTINCT OLI.opportunity_id)
+      WITH SYNONYMS = ('案件数', '商談数') COMMENT = '商談（案件）のユニーク件数',
+    OLI.total_amount_sum     AS SUM(OLI.total_amount)
+      WITH SYNONYMS = ('合計金額合計', '合計金額', '売上') COMMENT = '合計金額の総和（円）',
+    OLI.quote_amount_sum     AS SUM(OLI.quote_amount)
+      WITH SYNONYMS = ('見積金額合計', '見積金額') COMMENT = '見積金額の総和（円）',
+    OLI.proposed_amount_sum  AS SUM(OLI.proposed_amount)
+      WITH SYNONYMS = ('提示金額合計', '提示金額') COMMENT = '提示金額の総和（円）',
+    OLI.profit_sum           AS SUM(OLI.profit)
+      WITH SYNONYMS = ('利益合計', '利益') COMMENT = '利益額の総和（円）',
+    OLI.qty_sum              AS SUM(OLI.qty)
+      WITH SYNONYMS = ('台数合計', '台数') COMMENT = '台数の総和',
+    OLI.avg_profit_rate      AS AVG(OLI.profit_rate)
+      WITH SYNONYMS = ('平均利益率', '利益率') COMMENT = '利益率の平均（元データの比率値の単純平均）',
+    OLI.won_opportunity_count AS COUNT(DISTINCT CASE WHEN OLI.is_won THEN OLI.opportunity_id END)
+      WITH SYNONYMS = ('受注案件数', '受注件数', '成約件数') COMMENT = '受注済み商談のユニーク件数',
+    OLI.won_amount_sum       AS SUM(CASE WHEN OLI.is_won THEN OLI.total_amount END)
+      WITH SYNONYMS = ('受注金額合計', '受注金額', '受注高') COMMENT = '受注済み明細の合計金額の総和（円）'
   )
   COMMENT = 'フジテック営業パイプライン: 商談品目の分析用セマンティックビュー（Cortex Analyst / CoWork 用）';
 
--- 動作確認（SEMANTIC_VIEW 構文で直接クエリできる）:
+-- 動作確認（SEMANTIC_VIEW 構文で直接クエリできる。論理名は ASCII）:
 -- SELECT * FROM SEMANTIC_VIEW(
 --   SALES.ANALYTICS_MARTS.SV_OPPORTUNITY_LINE_ITEM
---   METRICS "案件数", "合計金額合計", "受注金額合計"
---   DIMENSIONS "クローズ会計年度"
+--   METRICS opportunity_count, total_amount_sum, won_amount_sum, line_item_count
+--   DIMENSIONS close_fiscal_year
 -- ) ORDER BY 1;
 
 -- ---------------------------------------------------
