@@ -1,8 +1,9 @@
 -- =====================================================
 -- 06_users.sql
--- Tableauサービスユーザー / 営業ユーザー
--- 参照: ../構成.md #### ユーザー
--- 実行ロール: SECURITYADMIN（ユーザー作成 + ネットワークポリシー作成）
+-- Tableauサービスユーザー / dbtサービスユーザー / 営業ユーザー
+-- 参照: ../構成.md #### ユーザー、../docs/tableau_cloud_connection_setup.md
+-- 実行ロール: SECURITYADMIN（ユーザー・ネットワークポリシー作成）
+--   PAT の発行だけは Snowsight で手動実行（下記「▼ 手動実行」参照）
 -- =====================================================
 
 USE ROLE SECURITYADMIN;
@@ -39,7 +40,9 @@ GRANT ROLE SALES_TRANSFORMER TO USER SVC_DBT;
 -- 未設定だと ALTER USER ... ADD PROGRAMMATIC ACCESS TOKEN が失敗する。
 -- ※ MINS_TO_BYPASS_NETWORK_POLICY_REQUIREMENT は PERSON 専用でSERVICEには効かない。
 -- ALLOWED_IP_LIST には Tableau 側の送信元グローバルIP を入れる
---   （Tableau Cloud の公開IPレンジ / Tableau Server の NAT・Egress IP）。
+--   Tableau Cloud: Pod（デプロイ先リージョン）ごとの Egress IP レンジを Tableau が公開。
+--     先方に Tableau Cloud サイトの Pod を確認し、該当 IP/CIDR を列挙する。
+--   Tableau Server: NAT / Egress IP を先方から提供してもらう。
 -- ---------------------------------------------------
 CREATE NETWORK POLICY IF NOT EXISTS TABLEAU_PAT_NP
   ALLOWED_IP_LIST = ('<TODO: TableauのグローバルIP/CIDR>')
@@ -49,17 +52,34 @@ ALTER USER SVC_TABLEAU SET NETWORK_POLICY = TABLEAU_PAT_NP;
 
 -- 代替案: IP制限を掛けたくない場合は認証ポリシーで要件自体を外す
 -- （認証ポリシーはスキーマオブジェクト。任意のDB/スキーマに作成し USAGE 管理する）
+-- USE ROLE ACCOUNTADMIN;
 -- CREATE AUTHENTICATION POLICY IF NOT EXISTS SALES.ANALYTICS.PAT_NO_NP
 --   PAT_POLICY = (NETWORK_POLICY_EVALUATION = ENFORCED_NOT_REQUIRED);
 -- ALTER USER SVC_TABLEAU SET AUTHENTICATION POLICY SALES.ANALYTICS.PAT_NO_NP;
+-- USE ROLE SECURITYADMIN;
 
--- PATの発行（作成後に別途実行。トークンは発行時のみ表示され再表示不可のため、
--- 発行後は安全な方法でTableau側に連携すること）
--- SERVICE ユーザーは ROLE_RESTRICTION 必須。発行には対象ユーザーへの OWNERSHIP または
--- MODIFY PROGRAMMATIC AUTHENTICATION METHODS 権限が必要（SECURITYADMIN は所有者なので可）。
--- ALTER USER SVC_TABLEAU ADD PROGRAMMATIC ACCESS TOKEN TABLEAU_PAT
---   ROLE_RESTRICTION = SALES_USER
---   DAYS_TO_EXPIRY = 90;
+-- ---------------------------------------------------
+-- ▼ 手動実行: PAT の発行（Snowsight のワークシートで実行すること）
+--   - token_secret は発行時に一度だけ表示され、再表示できない。
+--     `snow sql -f` で流すとログに残るため、必ず Snowsight で実行し、
+--     結果の secret を安全な経路で先方へ受け渡す（リポジトリ・chat・issue に貼らない）。
+--   - SERVICE ユーザーは ROLE_RESTRICTION 必須。
+--   - 実行ロール: SECURITYADMIN（SVC_TABLEAU の所有者）
+--   - 詳細な受け渡し手順と Tableau 側設定は Snowflake/docs/tableau_cloud_connection_setup.md
+-- ---------------------------------------------------
+-- USE ROLE SECURITYADMIN;
+-- ALTER USER IF EXISTS SVC_TABLEAU ADD PROGRAMMATIC ACCESS TOKEN TABLEAU_PAT
+--   ROLE_RESTRICTION = 'SALES_USER'
+--   DAYS_TO_EXPIRY = 90
+--   COMMENT = 'Tableau Cloud 接続用。90日でローテーション';
+--
+-- ローテーション（新 secret 発行、旧トークンは指定時間後に失効）:
+-- ALTER USER IF EXISTS SVC_TABLEAU ROTATE PROGRAMMATIC ACCESS TOKEN TABLEAU_PAT
+--   EXPIRE_ROTATED_TOKEN_AFTER_HOURS = 24;
+-- 失効:
+-- ALTER USER IF EXISTS SVC_TABLEAU REMOVE PROGRAMMATIC ACCESS TOKEN TABLEAU_PAT;
+-- 一覧:
+-- SHOW USER PROGRAMMATIC ACCESS TOKENS FOR USER SVC_TABLEAU;
 
 -- ---------------------------------------------------
 -- 営業ユーザー（人）
