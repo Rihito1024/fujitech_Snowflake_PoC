@@ -6,6 +6,9 @@ Salesforce 由来の営業データ（Snowflake 上のマート）を Tableau Cl
 > 先方提出用のスライド版: `Tableau_Cloud接続手順書_フジテック様.pptx`（本 md が内容の元。
 > 生成スクリプトは `build_tableau_deck.py`。エクスチュア公式テンプレート `template.pptx` を
 > リポジトリ直下に置いて `python Snowflake/docs/build_tableau_deck.py` で再生成）。
+>
+> 実際に払い出した接続情報の記録は `tableau_connection_info_TEMPLATE.md` を
+> `tableau_connection_info.md` にコピーして記入（記入済みは `.gitignore` 済み）。
 
 - 対象データ: 商談品目ワイドテーブル（1 行 = 商談 × 商品明細）
 - 接続ユーザー: `SVC_TABLEAU`（参照専用のサービスユーザー）

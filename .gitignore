@@ -10,5 +10,11 @@
 *.p8
 *.pem
 
+# 記入済みの接続情報シート（テンプレートのみ追跡）
+Snowflake/docs/tableau_connection_info.md
+
+# Office 一時ファイル
+~$*
+
 # エクスチュア公式パワポテンプレート（社内 Exportal から入手。リポジトリには含めない）
 /template.pptx
